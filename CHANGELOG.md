@@ -1,4 +1,8 @@
 --------------------------------------------------------------------------------
+
+* [yelets] fix hyphens bug in dict key name
+
+--------------------------------------------------------------------------------
 0.3.0, 17 November 2025
 
 * support yelets imports, project functions are now available under `@import("project")`

@@ -48,21 +48,21 @@ def to_python(code: str, imports: dict | None = None) -> tuple[str, dict]:
                 result += prefix + l + "\n"
             continue
 
-        dict_match = re.match(r"^\s*([A-z0-9_]+)\s*=\s*{\s*$", l)
+        dict_match = re.match(r"^\s*([A-z0-9-_]+)\s*=\s*{\s*$", l)
         if dict_match:
             result += f"{prefix}{dict_match.group(1)} = " + "{\n"
             preserve_block_close += 1
             ind += 1
             continue
 
-        subdict_match = re.match(r"^\s*\"?([A-z0-9_]+)\"?\s*:\s*{\s*$", l)
+        subdict_match = re.match(r"^\s*\"?([A-z0-9-_]+)\"?\s*:\s*{\s*$", l)
         if subdict_match:
             result += f"{prefix}\"{subdict_match.group(1)}\":" + " {\n"
             preserve_block_close += 1
             ind += 1
             continue
 
-        subdict_direct_match = re.match(r"^\s*\"?([A-z0-9_]+)\"?\s*:\s*(.+)\s*$", l)
+        subdict_direct_match = re.match(r"^\s*\"?([A-z0-9-_]+)\"?\s*:\s*(.+)\s*$", l)
         if subdict_direct_match:
             result += f"{prefix}\"{subdict_direct_match.group(1)}\": {subdict_direct_match.group(2)}\n"
             continue
