@@ -1,10 +1,22 @@
 import asyncio
 import importlib.util
+import re
 
 import colorama
 
 import core
 import sdk
+
+
+def _is_valid_id(id_string: str) -> bool:
+    # ^[a-z-]       -> Part 1: starts with lowercase letter or hyphen
+    # [a-z0-9-]*    -> Part 1: remaining lowercase alnum or hyphen
+    # \.            -> Literal dot
+    # [a-z-]        -> Part 2: starts with lowercase letter or hyphen
+    # [a-z0-9-]*$   -> Part 2: remaining lowercase alnum or hyphen
+    pattern = r"^[a-z-][a-z0-9-]*\.[a-z-][a-z0-9-]*$"
+
+    return bool(re.match(pattern, id_string))
 
 
 async def run(args, *, instruction: str | None = None):
@@ -22,15 +34,13 @@ async def run(args, *, instruction: str | None = None):
     if not isinstance(project_id, str):
         core.error(f"project.py:id must be a string")
         return
-    project_id = project_id.strip()
+    project_id = project_id.strip().lower()
+    if not _is_valid_id(project_id):
+        core.error(f"incorrect id '{project_id}', must follow the form 'domain.id'")
     try:
         tech, shortid = project_id.split(".")
     except ValueError:
-        core.error(f"incorrect id '{project_id}', must follow the form 'domain.id'")
-        return
-    if not tech.strip() or not shortid.strip():
-        core.error(f"incorrect id '{project_id}', must follow the form 'domain.id'")
-        return
+        assert False, "must be regex-protected"
 
     project_name = getattr(project_module, "name", None)
     if project_name is not None and not isinstance(project_name, str):

@@ -122,8 +122,6 @@ async def main():
             raise NotImplementedError
         case "status":
             raise NotImplementedError
-        case "dev":
-            await execute.run(rargs, instruction=f"import sdk from dome\nsdk.generate_build_info('build.{rargs.args.tech}')")
         case _:
             raise Exception(f"unrecognized command '{args.command}'")
     _response()
