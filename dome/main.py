@@ -3,7 +3,7 @@ from pathlib import Path
 import sys
 
 from dotenv import load_dotenv
-from dome import core
+from dome import core, status
 from dome import execute
 from dome.runargs import RunArgs
 from dome import sdk
@@ -126,8 +126,7 @@ async def _main():
         case "template":
             raise NotImplementedError
         case "status":
-            # @tmp
-            await vc._status(rargs)
+            await status.run(rargs)
         case _:
             core.error(f"unrecognized module '{args.module}'")
             sys.exit(1)
