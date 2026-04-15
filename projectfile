@@ -1,6 +1,0 @@
-project = @import("project")
-id = "project"
-
-build = fn() {
-    project.code("codes.py")
-}

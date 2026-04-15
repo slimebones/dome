@@ -1,210 +1,85 @@
-# Project management tool.
+import asyncio
+from pathlib import Path
 
 from dotenv import load_dotenv
-import build
+import core
+from runargs import RunArgs
+import vcs
 
-import location
-location.init(build.project_id)
-
-import log
-log.init()
-
-import config
-config.init()
-
-import xtime
-xtime.init()
-
+core.init("dome")
 import argparse
-import asyncio
-import functools
-import inspect
-from call import call
-import commit as commitmod
-import const
-import sys
-from typing import Any
-from os import PathLike
-import colorama
-from controller import response
-import location
-from model import Module, Project
-import module
-import yelets
-import os
-from pathlib import Path
-import re
-import shutil
-import subprocess
-import time
-from typing import Callable, Literal
-from pydantic import BaseModel
 
-# Project is always called in the current working directory. @todo add ability to override cwd via CLI.
-cwd = location.cwd()
-build_dir: Path
-target_debug: bool
-target_version: str
+cwd = Path.cwd()
+build_dir = Path(cwd, ".build")
+target_version = "latest"
+target_mode = "default"
+target_debug = False
 
 
-async def cmd_status():
-    stdout, stderr, e = call("git status")
-    if e > 0:
-        response(f"project status finished with code #{e}")
-    response(stdout, end="")
-    response(stderr, end="")
-
-
-async def cmd_commit():
-    commitmod.commit(response)
-
-
-async def cmd_update():
-    stdout, stderr, e = call("git pull")
-    if e > 0:
-        response(f"project update finished with code #{e}")
-    response(stdout, end="")
-    response(stderr, end="")
-
-
-async def cmd_push():
-    stdout, stderr, e = call("git push")
-    if e > 0:
-        response(f"project push finished with code #{e}")
-    response(stdout, end="")
-    response(stderr, end="")
-
-    stdout, stderr, e = call("git push --tags")
-    if e > 0:
-        response(f"project push tags finished with code #{e}")
-    response(stdout, end="")
-    response(stderr, end="")
-
-
-class YeletsFunctionArgs:
-    def __init__(self, positional, keyword):
-        self._positional = positional
-        for k in keyword.keys():
-            if k.startswith("_"):
-                raise Exception(f"Keywords are prohibited to start with an underscore.")
-        self._keyword = keyword
-
-    def __getitem__(self, index: int):
-        try:
-            return self._positional[index]
-        except IndexError:
-            return None
-
-    def __getattribute__(self, key: str) -> Any:
-        if key.startswith("_"):
-            return super().__getattribute__(key)
-        else:
-            return self.keyword.get(key, None)
-
-
-async def execute_project_function(projectfile: Path, function_name: str, args: YeletsFunctionArgs):
-    project = Project.read(projectfile, target_version=target_version, target_debug=target_debug, cwd=cwd)
-
-    response(f"{colorama.Fore.MAGENTA}== {colorama.Fore.YELLOW}{project.id}{colorama.Fore.RESET}: {colorama.Fore.CYAN}{function_name}{colorama.Fore.RESET} {colorama.Fore.MAGENTA}=={colorama.Fore.RESET}")
-
-    function = project.context.get(function_name, None)
-    if function is None:
-        raise Exception(f"Could not find a function '{function_name}' at '{projectfile}'.")
-    if not callable(function):
-        raise Exception(f"Object '{function_name}' at '{projectfile}' expected to be callable.")
-
-    argument_count = len(inspect.signature(function).parameters)
-    final_function = None
-    if argument_count == 1:
-        final_function = functools.partial(function, args)
-    elif argument_count > 1:
-        raise Exception(f"Function '{function_name}' at '{projectfile}' should accept zero or one arguments.")
-    else:
-        final_function = function
-
-    try:
-        final_function()
-    except Exception as e:
-        response(f"{colorama.Fore.RED}ERROR{colorama.Fore.RESET}")
-        raise Exception(f"During execution of a function '{function_name}' at '{projectfile}', an error occurred: {e}") from e
-    else:
-        response(f"{colorama.Fore.GREEN}DONE{colorama.Fore.RESET}")
-
-
-async def cmd_execute(function_name: str, args: YeletsFunctionArgs):
-    await execute_project_function(Path(cwd, "projectfile"), function_name, args)
-
-
-async def cmd_execute_all(function_name: str, args: YeletsFunctionArgs):
-    i = 0
-    # Collect projects.
-    for source, subdirs, subfiles in cwd.walk():
-        for file in subfiles:
-            # @todo We should be able to search for `project`, `project.y`, `project.jai`, etc. Project file implementation does not matter as long as we have a driver for it. What matters, is complying to our standards - drivers should execute file in a way, that left us with a namespace map, with converted to python objects, including functions.
-            if file == "projectfile":
-                projectfile = Path(source, file)
-                if i > 0:
-                    response()
-                await execute_project_function(projectfile, function_name, args)
-                i += 1
+def _response(m: str = ""):
+    print(m)
 
 
 async def main():
-    await log.ainit()
+    await core.ainit()
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-cwd", type=Path, dest="cwd", default=Path.cwd())
-    parser.add_argument("-v, -version", type=str, default="0.0.0", dest="version")
-    parser.add_argument("-d, -debug", action="store_true", dest="debug")
+    main_parser = argparse.ArgumentParser()
+    main_parser.add_argument("-v", type=str, default="0.0.0", dest="version")
+    main_parser.add_argument("-m", type=str, default="default", dest="mode")
+    main_parser.add_argument("-d", action="store_true", dest="debug")
+    main_parser.add_argument("-cwd", type=Path, dest="cwd", default=Path.cwd())
 
-    subparsers = parser.add_subparsers(title="Commands", dest="command")
+    module_subparser = main_parser.add_subparsers(title="Modules", help="Modules.", dest="module")
 
-    # `project execute`
-    subparser = subparsers.add_parser("execute", help="Executes a function from the cwd's projectfile.")
-    subparser.add_argument("function_name", type=str)
-    subparser.add_argument("positional", nargs="*", help="Positional arguments to a project's function.")
-    subparser.add_argument("--keyword", action="append", nargs=2, metavar=("KEY", "VALUE"), help="Keyword arguments to a project's function.")
 
-    # `project execute-all`
-    subparser = subparsers.add_parser("execute-all", help="Executes a function from the cwd's projectfile and all the subprojects.")
-    subparser.add_argument("function_name", type=str)
-    subparser.add_argument("positional", nargs="*", help="Positional arguments to a project's function.")
-    subparser.add_argument("-kw", action="append", nargs=2, metavar=("KEY", "VALUE"), help="Keyword arguments to a project's function.")
+    # execute
+    parser = module_subparser.add_parser("execute", help="Executes a function from the cwd's projectfile.")
+    parser.add_argument("function_name", type=str)
+    parser.add_argument("positional", nargs="*", help="Positional arguments to a project's function.")
+    parser.add_argument("--keyword", action="append", nargs=2, metavar=("KEY", "VALUE"), help="Keyword arguments to a project's function.")
 
-    # `project status`
-    subparsers.add_parser("status", help="Show status.")
 
-    # `project commit`
-    subparsers.add_parser("commit", help="Commit changes.")
+    # status
+    module_subparser.add_parser("status", help="Show project status.")
 
-    # `project push`
-    subparsers.add_parser("push", help="Push changes.")
 
-    # `project update`
-    subparsers.add_parser("update", help="Update from version control.")
+    # vcs
+    vcs_parser = module_subparser.add_parser("vcs", help="Version Control System")
+    vcs_subparser = vcs_parser.add_subparsers(title="VCS", help="VCS actions.", dest="vcs")
+    # vcs.commit
+    vcs_subparser.add_parser("commit", help="Commit changes.")
+    # vcs.push
+    vcs_subparser.add_parser("push", help="Push changes.")
+    # vcs.update
+    vcs_subparser.add_parser("update", help="Update from version control.")
 
-    # `project add`
-    subparser = subparsers.add_parser("add", help="Add a dependency.")
-    subparser.add_argument("dependency_name", type=str)
-    subparser.add_argument("-v", type=str, default="latest", dest="dependency_version")
-    subparser.add_argument("-o", type=Path, default=None, dest="output_dir")
 
-    # `project upload`
-    subparser = subparsers.add_parser("upload", help="Upload a module.")
-    subparser.add_argument("upload_dir", type=Path)
+    # package
+    package_parser = module_subparser.add_parser("package", help="Packaging.")
+    package_subparser = package_parser.add_subparsers(title="Package", help="Packaging actions.", dest="package")
+    # package.add
+    parser = package_subparser.add_parser("add", help="Adds a package.")
+    parser.add_argument("package", type=str)
+    parser.add_argument("version", type=str, default="latest")
+    parser.add_argument("output", type=Path, default=None)
+    # package.upload
+    parser = package_subparser.add_parser("upload", help="Uploads a module.")
+    parser.add_argument("dir", type=Path)
+    # package.install
+    package_subparser.add_parser("install", help="Installs/Refreshes all project-specified packages.")
 
-    # `project install`
-    subparsers.add_parser("install", help="Installs/Refreshes all project-specified dependencies.")
 
-    args = parser.parse_args()
+    args = main_parser.parse_args()
     global cwd
     cwd = args.cwd
     global build_dir
-    build_dir = Path(cwd, ".build")
+    build_dir = Path(cwd, "build")
     global target_version
     target_version = args.version
     global target_debug
     target_debug = args.debug
+    global target_mode
+    target_mode = args.mode
 
     try:
         args_kw = args.kw
@@ -214,37 +89,34 @@ async def main():
     if args_kw is None:
         args_kw = {}
 
-    projectfile = Path(cwd, "projectfile")
+    projectfile = Path(cwd, "project.py")
     dotenvfile = Path(cwd, ".env")
     load_dotenv(dotenvfile)
-    response()
-    module.init(projectfile, target_version, target_debug, cwd, response)
-    match args.command:
+    _response()
+
+    rargs = RunArgs(
+        args=args,
+        projectfile=projectfile,
+        build_dir=build_dir,
+        cwd=cwd,
+        version=target_version,
+        debug=target_debug,
+        mode=target_mode,
+        response=_response,
+    )
+
+    match args.module:
         case "execute":
-            yelets_args = YeletsFunctionArgs(args.positional, {kv[0]: kv[1] for kv in args_kw})
-            await cmd_execute(args.function_name, yelets_args)
-        case "execute-all":
-            yelets_args = YeletsFunctionArgs(args.positional, {kv[0]: kv[1] for kv in args_kw})
-            await cmd_execute_all(args.function_name, yelets_args)
+            raise NotImplementedError
+        case "vcs":
+            await vcs.run(rargs)
         case "template":
-            pass
+            raise NotImplementedError
         case "status":
-            await cmd_status()
-        case "commit":
-            await cmd_commit()
-        case "update":
-            await cmd_update()
-        case "push":
-            await cmd_push()
-        case "add":
-            await module.cmd_add(args.dependency_name, args.dependency_version, args.output_dir)
-        case "upload":
-            await module.cmd_upload(args.upload_dir)
-        case "install":
-            await module.cmd_install()
+            raise NotImplementedError
         case _:
             raise Exception(f"unrecognized command '{args.command}'")
-    response()
+    _response()
 
 
 if __name__ == "__main__":

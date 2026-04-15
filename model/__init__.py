@@ -1,71 +1,25 @@
-from pathlib import Path
-from typing import Any, Self
-import const
+from typing import Self
 from pydantic import BaseModel
 
-from controller import response
-import yelets
-import yelets_project
+import core
 
+__all__ = [
+    "Model",
+    "ArbModel"
+]
 
-class Module(BaseModel):
-    id: str
-    version: str
-
-    @classmethod
-    def read(cls, dir: Path) -> Self:
-        r = yelets.execute_file(dir)
-        return cls(
-            id=r["id"],
-            version=r["version"],
-        )
-
-
-class Project(BaseModel):
-    id: str
-    source: Path
-    modules: dict[Path, Module]
-    context: dict
+class Model(BaseModel):
+    def to_bytes(self) -> bytes:
+        return core.json_to_bytes(self.model_dump())
 
     @classmethod
-    def read(cls, f: Path, target_version, target_debug, cwd) -> Self:
-        project = cls(
-            id="*unknown*",
-            source=f.parent,
-            modules={},
-            context={},
-        )
-        project_imports = yelets_project.init(
-            response=response,
-            project=project,
-            cwd=cwd,
-            indentation=const.indentation,
-            target_version=target_version,
-            target_debug=target_debug,
-        )
-        imports = {
-            "project": project_imports,
-        }
-        ctx = yelets.execute_file(f, imports)
+    def from_bytes(cls, d: bytes) -> Self:
+        return core.bytes_to_model(cls, d)
 
-        project_id = ctx.get("id", "")
-        if not isinstance(project_id, str):
-            raise Exception(f"Invalid project name at location '{f}'.")
-        elif project_id == "":
-            raise Exception(f"Empty project name at location '{f}'.")
-        elif project_id is None or project_id == "":
-            raise Exception(f"Invalid project configuration at '{f}'.")
+    # @classmethod
+    # def from_record(cls, r: Record) -> Self:
+    #     raise NotImplementedError
 
-        modules = ctx.get("modules", {})
-        processed_modules = {}
-        for k, v in modules.items():
-            processed_modules[Path(k)] = Module(
-                id=v["id"],
-                version=v["version"],
-            )
-
-        project.id = project_id
-        project.context = ctx
-        project.modules = processed_modules
-
-        return project
+class ArbModel(Model):
+    class Config:
+        arbitrary_types_allowed = True

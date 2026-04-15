@@ -1,78 +1,180 @@
-# Project
-Project management tool. Should contain all the features we need to deploy reliable projects with focus on simplicity.
+# Dome
 
-This software manages project, which are directories with a file named `projectfile` defined, as well as project's modules, defined in directories with a file named `modulefile`. These files contain Yelets Scripting Language code aimed on providing customizable project development services, such as building, code generation, dependency management.
+Collection of utilities for project technical management. Should contain all the features we need to deploy reliable projects with focus on simplicity.
+
+This software manages projects, which are directories with a file named `project.py` defined. These files contain Python Programming Language code aimed on providing customizable project development services, such as building, code generation, dependency management.
+
+While every project could be an application, library, module, Dome does not distinguish their types. It's all *software*. And if it's a software, and we have `project.py` defined, then Dome can control it.
+
+Projects can be nested. This pattern is recognizable by Dome, and in fact, it's a core part of how crucial commands works, for example, see [execute -a](#execute).
 
 
-## Commands
-Commands are organized in the 2 groups:
-1. local to a project: execution of the functions from the `projectfile`: `execute` and `execute-all`
-2. universal: helper commands, such as `init`, `status`, `template`, `push`, `module`
+## Console Commands
 
-### `project init`
-Creates a new project using template:
+Every console call to Dome is written according to this pattern:
 ```
-project make {project_id} {template:optional}
-```
-
-Will create a sub-directory in current working directory named as project name says. Inside, the files will be generated according to a predefined template. Templates are managed by united engine and organized under command `project template ...`, see below.
-
-
-### `project execute {function_name} {...args}`
-Calls specified function of your `projectfile`.
-
-Every executable function can access current args by calling the `args()` function, which returns a dictionary looking like this:
-```yelets
-{
-    positional: [
-        "my_directory_1",
-        "my_directory_2",
-    ],
-    keyword: {
-        force: null,
-        organizer: "advanced",
-        limit: 100,
-    },
-}
+dome {...dome_args} {module} {...module_args}
 ```
 
-### `project execute-all {function_name} {...args}`
-Executes a function for every project in the stack. The same arguments are passed for each function.
+Below we will discuss available Dome arguments, and then, shortly, available modules.
+
+### Dome Arguments
+
+#### `-d`
+
+Enables Debug mode. This is a special simple state to choose a specific behaviour. In combination with mode selection `-m`, this allows to support wide variety of strategies. Disabled by default.
+
+#### `-m {mode}`
+
+Specifies a mode for the call. Modes allow to choose a specific behaviour. Default: `default`.
 
 
-### `project add {dependency_name} {version: optional, defaults "latest"} {output_directory: optional, default to the original dependency name}`
-Adds a dependency to a project.
+#### `-v`
+
+Specifies a version for the call. The version can be used in sequences like releasing. If is not provided, the following command might pop up a prompt to enter the version.
 
 
-### `project install`
-Installs/Refreshes all project-specified dependencies. Every dependency is a directory, containing correct `modulefile`.
+#### `-cwd`
 
+Alters current working directory. Default: current working directory, where the command were executed.
 
-### `project upload {module_directory}`
-Uploads a dependency to a server, specified in project's `user.cfg`. Dependency version must be unique for a chosen domain and module name, and must not be lower than the latest version of this dependency name for the given domain uploaded. Also, the upload will be blocked if attempted to upload newest version from one, that is lower than the latest uploaded one.
+### Modules
+#### init
 
-Module file of a dependency may look as follows (`id` and `version` must be defined):
-```yelets
-id = "python.my_module"
-version = "0.4.9"
+```
+dome init {project_id} {template = null}
 ```
 
+Creates a new project using template.
 
-### `project status`
+#### execute
+
+```
+dome execute {function_name} {...args}
+```
+
+Executes a function, defined in `project.py`.
+
+If you provide flag `-a`, this command will execute a function for this, and all nestead projects. The same arguments are passed for each function.
+
+Target function should be a defined in `project.py` object, following signature `Callable`, accepting one of the following:
+- zero arguments
+- `args` list of strings
+- `kwargs` dict, keys are strings, values are strings
+- both `args` and `kwargs`
+
+Example:
+```python
+# project.py
+
+def deploy(args: list[str], kwargs: dict[str, str]):
+    # implementation...
+    pass
+```
+
+See [SDK](#sdk) for the information of how to use powers of Dome in the custom functions.
+
+#### package
+
+```
+dome package {subcommand}
+```
+
+Manages Packages - bundled projects.
+
+The subcommands are listed below.
+
+##### install
+
+```
+dome package install
+```
+
+Installs/Refreshes all project-specified dependencies.
+
+##### upload
+
+```
+dome package upload {directory}
+```
+
+Uploads a package to a server, specified in project's `user.cfg` configuration.
+
+##### add
+
+```
+dome package add {package_id} {version = "latest"} {output_directory = *original package id*}
+```
+
+Adds a package to package list of the current project and does call [install](#install) afterwards.
+
+#### status
+
+```
+dome status
+```
+
 Displays information about the current project.
 
 
-### `project commit`
-Commits changes to version control.
+#### vcs
 
+```
+dome vcs {subcommand}
+```
 
-### `project push`
+Utilities for Version Control System.
+
+The subcommands are listed below.
+
+##### commit
+
+```
+dome vcs commit
+```
+
+Commits changes to version control. The commit message is generated automatically, see [why we use automatic git commit messages](https://ryzhovalex.com/post/why-we-use-automatic-git-commit-messages).
+
+##### push
+
+```
+dome vcs push
+```
+
 Pushes changes to version control.
 
+##### update
 
-### `project update`
-Updates changes from version control.
+```
+dome vcs update
+```
 
+Updates changes from version control. Works like a `git pull` if applicable to Git.
 
-### `project template`
+#### template
+
+```
+dome template
+```
+
 Makes use of a templates inside a project.
+
+Work Under Progress: this module is in development.
+
+
+## Structure of `project.py`
+
+File `project.py` is normal python script, which can define various objects, as well as import stuff. The minimal `project.py` looks just like this (domain definition is optional):
+```python
+id = "my_domain.my_project"
+```
+
+Yes, the `id` is the bare-minimum for starting a project. Everything beyond that is custom-space: everything that is needed for the project technical management.
+
+Any defined here object without leading underscore will be available for the external commands.
+
+### SDK
+
+Every Dome installation comes with SDK, available as `import dome.sdk`. It is a collection of utilities for powerful collaboration with the Dome, mainly from `project.py` custom functions.
+
+Work Under Progress: SDK's interface and documentation is currently under an active development. Consider reading Python's built-in `help()` on `dome.sdk` module.
