@@ -1,7 +1,7 @@
 from typing import Self
 from pydantic import BaseModel
 
-import core
+from dome import core
 
 __all__ = [
     "Model",

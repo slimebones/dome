@@ -13,9 +13,9 @@ from typing import TYPE_CHECKING, Callable
 import colorama
 import httpx
 
-import core
-from model import Model
-import tech
+from dome import core
+from dome.model import Model
+from dome import tech
 
 
 class ProjectFunctionContext(Model):

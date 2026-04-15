@@ -1,5 +1,5 @@
-from core import CodeError
-import core
+from dome.core import CodeError
+from dome import core
 import subprocess
 from pathlib import Path
 import re

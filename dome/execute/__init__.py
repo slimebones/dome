@@ -4,8 +4,8 @@ import re
 
 import colorama
 
-import core
-import sdk
+from dome import core
+from dome import sdk
 
 
 def _is_valid_id(id_string: str) -> bool:
