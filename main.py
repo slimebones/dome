@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import core
 import execute
 from runargs import RunArgs
+import sdk
 import vc
 
 core.init("dome")
@@ -38,6 +39,10 @@ async def main():
     parser.add_argument("function_name", type=str)
     parser.add_argument("positional", nargs="*", help="Positional arguments to a project's function.")
     parser.add_argument("--kw", action="append", nargs=2, metavar=("KEY", "VALUE"), help="Keyword arguments to a project's function.")
+
+
+    # dev
+    module_subparser.add_parser("dev", help="Switch to development setting.")
 
 
     # status
@@ -105,6 +110,7 @@ async def main():
         debug=target_debug,
         mode=target_mode,
         response=_response,
+        source=projectfile.parent,
     )
 
     match args.module:
@@ -116,6 +122,8 @@ async def main():
             raise NotImplementedError
         case "status":
             raise NotImplementedError
+        case "dev":
+            await execute.run(rargs, instruction=f"import sdk from dome\nsdk.generate_build_info('build.{rargs.args.tech}')")
         case _:
             raise Exception(f"unrecognized command '{args.command}'")
     _response()

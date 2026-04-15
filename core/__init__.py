@@ -403,7 +403,6 @@ def init(project_name: str):
 
 
     # Log
-    global loop_task
     rotation_str = config_get("log", "rotation", "10MB")
     rotation_suffix = rotation_str[-2:]
     global rotation
@@ -418,4 +417,5 @@ def init(project_name: str):
 
 
 async def ainit():
+    global loop_task
     loop_task = asyncio.create_task(_log_loop())
