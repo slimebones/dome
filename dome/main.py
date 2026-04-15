@@ -1,5 +1,6 @@
 import asyncio
 from pathlib import Path
+import sys
 
 from dotenv import load_dotenv
 import core
@@ -22,7 +23,7 @@ def _response(m: str = "", *, end: str = "\n"):
     print(m, end=end)
 
 
-async def main():
+async def _main():
     await core.ainit()
 
     main_parser = argparse.ArgumentParser()
@@ -113,6 +114,10 @@ async def main():
         source=projectfile.parent,
     )
 
+    if not args.module:
+        core.error("specify module")
+        sys.exit(1)
+
     match args.module:
         case "execute":
             await execute.run(rargs)
@@ -123,9 +128,13 @@ async def main():
         case "status":
             raise NotImplementedError
         case _:
-            raise Exception(f"unrecognized command '{args.command}'")
-    _response()
+            core.error(f"unrecognized module '{args.module}'")
+            sys.exit(1)
+
+
+def main():
+    asyncio.run(_main())
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
