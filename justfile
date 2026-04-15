@@ -6,6 +6,9 @@ main *args:
 test:
     @ pytest
 
+install:
+    @ pip install -e .
+
 release:
     @ rm -rf dist
     @ python -m build
