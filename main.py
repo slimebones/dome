@@ -3,6 +3,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 import core
+import execute
 from runargs import RunArgs
 import vc
 
@@ -36,7 +37,7 @@ async def main():
     parser = module_subparser.add_parser("execute", help="Executes a function from the cwd's projectfile.")
     parser.add_argument("function_name", type=str)
     parser.add_argument("positional", nargs="*", help="Positional arguments to a project's function.")
-    parser.add_argument("--keyword", action="append", nargs=2, metavar=("KEY", "VALUE"), help="Keyword arguments to a project's function.")
+    parser.add_argument("--kw", action="append", nargs=2, metavar=("KEY", "VALUE"), help="Keyword arguments to a project's function.")
 
 
     # status
@@ -94,7 +95,6 @@ async def main():
     projectfile = Path(cwd, "project.py")
     dotenvfile = Path(cwd, ".env")
     load_dotenv(dotenvfile)
-    _response()
 
     rargs = RunArgs(
         args=args,
@@ -109,7 +109,7 @@ async def main():
 
     match args.module:
         case "execute":
-            raise NotImplementedError
+            await execute.run(rargs)
         case "vc":
             await vc.run(rargs)
         case "template":
