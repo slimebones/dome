@@ -4,7 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import core
 from runargs import RunArgs
-import vcs
+import vc
 
 core.init("dome")
 import argparse
@@ -16,8 +16,8 @@ target_mode = "default"
 target_debug = False
 
 
-def _response(m: str = ""):
-    print(m)
+def _response(m: str = "", *, end: str = "\n"):
+    print(m, end=end)
 
 
 async def main():
@@ -43,15 +43,17 @@ async def main():
     module_subparser.add_parser("status", help="Show project status.")
 
 
-    # vcs
-    vcs_parser = module_subparser.add_parser("vcs", help="Version Control System")
-    vcs_subparser = vcs_parser.add_subparsers(title="VCS", help="VCS actions.", dest="vcs")
-    # vcs.commit
-    vcs_subparser.add_parser("commit", help="Commit changes.")
-    # vcs.push
-    vcs_subparser.add_parser("push", help="Push changes.")
-    # vcs.update
-    vcs_subparser.add_parser("update", help="Update from version control.")
+    # vc
+    vc_parser = module_subparser.add_parser("vc", help="Version Control System")
+    vc_subparser = vc_parser.add_subparsers(title="vc", help="vc actions.", dest="vc")
+    # vc.commit
+    vc_subparser.add_parser("commit", help="Commit changes.")
+    # vc.push
+    vc_subparser.add_parser("push", help="Push changes.")
+    # vc.update
+    vc_subparser.add_parser("update", help="Update from version control.")
+    # vc.status
+    vc_subparser.add_parser("status", help="Show version control status.")
 
 
     # package
@@ -108,8 +110,8 @@ async def main():
     match args.module:
         case "execute":
             raise NotImplementedError
-        case "vcs":
-            await vcs.run(rargs)
+        case "vc":
+            await vc.run(rargs)
         case "template":
             raise NotImplementedError
         case "status":

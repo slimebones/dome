@@ -89,13 +89,13 @@ async def _commit(args):
 async def _push(args):
     stdout, stderr, e = core.call("git push")
     if e > 0:
-        args.response(f"project push finished with code #{e}")
+        args.response(f"push finished with code #{e}")
     args.response(stdout, end="")
     args.response(stderr, end="")
 
     stdout, stderr, e = core.call("git push --tags")
     if e > 0:
-        args.response(f"project push tags finished with code #{e}")
+        args.response(f"push tags finished with code #{e}")
     args.response(stdout, end="")
     args.response(stderr, end="")
 
@@ -103,13 +103,21 @@ async def _push(args):
 async def _update(args):
     stdout, stderr, e = core.call("git pull")
     if e > 0:
-        args.response(f"project update finished with code #{e}")
+        args.response(f"update finished with code #{e}")
+    args.response(stdout, end="")
+    args.response(stderr, end="")
+
+
+async def _status(args):
+    stdout, stderr, e = core.call("git status")
+    if e > 0:
+        args.response(f"status finished with code #{e}")
     args.response(stdout, end="")
     args.response(stderr, end="")
 
 
 async def run(args):
-    target = args.vcs
+    target = args.args.vc
 
     match target:
         case "commit":
@@ -118,5 +126,7 @@ async def run(args):
             await _push(args)
         case "update":
             await _update(args)
+        case "status":
+            await _status(args)
         case _:
             raise CodeError(1, f"unrecognized target '{target}'")

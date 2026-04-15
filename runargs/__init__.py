@@ -12,7 +12,7 @@ class RunArgs(Model):
     mode: str
     projectfile: Path
     build_dir: Path
-    response: Callable[[str], None]
+    response: Callable
 
     class Config:
         arbitrary_types_allowed = True

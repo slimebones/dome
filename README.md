@@ -117,10 +117,10 @@ dome status
 Displays information about the current project.
 
 
-#### vcs
+#### vc
 
 ```
-dome vcs {subcommand}
+dome vc {subcommand}
 ```
 
 Utilities for Version Control System.
@@ -130,7 +130,7 @@ The subcommands are listed below.
 ##### commit
 
 ```
-dome vcs commit
+dome vc commit
 ```
 
 Commits changes to version control. The commit message is generated automatically, see [why we use automatic git commit messages](https://ryzhovalex.com/post/why-we-use-automatic-git-commit-messages).
@@ -138,7 +138,7 @@ Commits changes to version control. The commit message is generated automaticall
 ##### push
 
 ```
-dome vcs push
+dome vc push
 ```
 
 Pushes changes to version control.
@@ -146,7 +146,7 @@ Pushes changes to version control.
 ##### update
 
 ```
-dome vcs update
+dome vc update
 ```
 
 Updates changes from version control. Works like a `git pull` if applicable to Git.
