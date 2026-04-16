@@ -37,13 +37,10 @@ async def _main():
 
     # execute
     parser = module_subparser.add_parser("execute", help="Executes a function from the cwd's projectfile.")
+    parser.add_argument("-a", action="store_true", dest="all")
     parser.add_argument("function_name", type=str)
     parser.add_argument("positional", nargs="*", help="Positional arguments to a project's function.")
     parser.add_argument("--kw", action="append", nargs=2, metavar=("KEY", "VALUE"), help="Keyword arguments to a project's function.")
-
-
-    # dev
-    module_subparser.add_parser("dev", help="Switch to development setting.")
 
 
     # status

@@ -1,13 +1,11 @@
-project = @import("project")
+from dome import sdk
 
-id = "project_1"
+project_id = "project-1.py"
 
-build = fn() {
-    project.info("build.py")
-    project.code("codes.py")
-
-    project.includePython()
-}
+async def build():
+    sdk.generate_build_info()
+    sdk.generate_codes()
+    sdk.include_python()
 
 
 modules = {
