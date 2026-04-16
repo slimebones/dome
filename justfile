@@ -9,7 +9,9 @@ test:
 install:
     @ pip install -e .
 
-release:
+release version:
+    @ git commit -am {{version}}
+    @ git tag {{version}}
     @ rm -rf dist
     @ python -m build
     @ python -m twine upload dist/* --verbose

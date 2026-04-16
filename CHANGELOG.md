@@ -1,4 +1,5 @@
 --------------------------------------------------------------------------------
+1.2.0, 16 April 2026
 
 * polish execute capabilities, add -a flag
 * extend sdk with missing functions, also add init_build to correctly initialize build directories
