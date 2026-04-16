@@ -128,6 +128,8 @@ async def _main():
             core.error(f"unrecognized module '{args.module}'")
             sys.exit(1)
 
+    _response()
+
 
 def main():
     asyncio.run(_main())

@@ -269,7 +269,7 @@ def tar(source_dir: PathLike | str, output_filename: PathLike | str):
     """Create a .tar.gz archive from the specified directory."""
     p = project()
     with tarfile.open(Path(p.source_dir, output_filename), "w:gz") as tar:
-        tar.add(Path(p.source_dir, Path(p.source_dir, source_dir)), arcname=os.path.basename(source_dir))
+        tar.add(Path(p.source_dir, source_dir), arcname=os.path.basename(source_dir))
 
 
 def untar(tar_gz_path: PathLike | str, extract_path: PathLike | str):

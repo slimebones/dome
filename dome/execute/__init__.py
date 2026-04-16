@@ -2,17 +2,36 @@ import asyncio
 import importlib.util
 from pathlib import Path
 import re
+import subprocess
 
 import colorama
 
 from dome import core, project
+from dome import const
 from dome import sdk
 from dome.runargs import RunArgs
 
 
 async def run(args: RunArgs):
     if args.args.all:
-        paths = list(Path(".").rglob("project.py"))
+        # find all projects respecting gitignore
+        try:
+            result = subprocess.run(
+                ["git", "ls-files", "--others", "--exclude-standard", "--cached"],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            tracked_files = set(result.stdout.splitlines())
+        except subprocess.CalledProcessError:
+            tracked_files = set()
+
+        paths = []
+        for p in Path(".").rglob("project.py"):
+            rel_p = str(p.relative_to(".")).replace("\\", "/")
+            if rel_p in tracked_files:
+                paths.append(p)
+
         for p in paths:
             await _execute_project(p, args)
     else:
@@ -24,16 +43,15 @@ async def _execute_project(path: Path, args: RunArgs):
     if parse_tuple is None:
         return
     p, pm = parse_tuple
-
-    args.response()
-    args.response(f"== execute: {colorama.Fore.CYAN}{p.id}{colorama.Fore.RESET} ==")
-
-    # intentional private call to secure sdk namespace
-    sdk._set_project(p)
-
     function_name = args.args.function_name
     function_args = args.args.positional
     function_kwargs = dict(args.args.kw if args.args.kw else {})
+
+    args.response()
+    args.response(f"{const.grey}<<< execute {colorama.Fore.YELLOW}{p.id}{const.grey}::{colorama.Fore.GREEN}{function_name}{colorama.Fore.RESET} {const.grey}>>>{const.reset}")
+
+    # intentional private call to secure sdk namespace
+    sdk._set_project(p)
 
     target_function = getattr(pm, function_name, None)
     if target_function is None:
