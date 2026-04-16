@@ -3,7 +3,7 @@ import os
 import re
 import subprocess
 
-from dome import core, runargs
+from dome import core, project, runargs
 
 
 def _get_git_info(command):
@@ -50,41 +50,10 @@ def _is_valid_id(id_string: str) -> bool:
 
 
 async def run(args: runargs.RunArgs):
-    spec = importlib.util.spec_from_file_location("projectfile", args.projectfile)
-    if spec is None or spec.loader is None:
-        core.error(f"projectfile is not found at '{args.projectfile}'")
+    parse_tuple = project.parse(args.projectfile, args)
+    if parse_tuple is None:
         return
-    project_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(project_module)
-
-    project_id = getattr(project_module, "id", None)
-    if project_id is None:
-        core.error(f"project.py must define 'id'")
-        return
-    if not isinstance(project_id, str):
-        core.error(f"project.py:id must be a string")
-        return
-    project_id = project_id.strip().lower()
-    if not _is_valid_id(project_id):
-        core.error(f"incorrect id '{project_id}', must follow the form 'domain.id'")
-    try:
-        tech, shortid = project_id.split(".")
-    except ValueError:
-        assert False, "must be regex-protected"
-
-    project_name = getattr(project_module, "name", None)
-    if project_name is not None and not isinstance(project_name, str):
-        core.error(f"project.py:name must be a string")
-        return
-    if project_name is not None:
-        project_name = project_name.strip()
-    project_description = getattr(project_module, "description", None)
-    if project_description is not None and not isinstance(project_description, str):
-        core.error(f"project.py:description must be a string")
-        return
-    if project_description is not None:
-        project_description = project_description.strip()
-
+    p, pm = parse_tuple
 
     tracked_files = _get_git_info("git ls-files").splitlines()
     code_file_count = 0
@@ -114,11 +83,11 @@ async def run(args: runargs.RunArgs):
         print(f"{formatted_title:<{title_width}}{' ' * gap}{content}")
 
     print("-" * 69)
-    print_row("Id", project_id)
-    if project_name:
-        print_row("Name", project_name)
-    if project_description:
-        print_row("Description", project_description)
+    print_row("Id", p.id)
+    if p.name:
+        print_row("Name", p.name)
+    if p.description:
+        print_row("Description", p.description)
     print_row("Lines", f"{total_code_lines:,}")
     print_row("Files", code_file_count)
     if biggest_code_lines[1]:
