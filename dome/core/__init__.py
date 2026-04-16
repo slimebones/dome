@@ -331,7 +331,7 @@ class Signal(Generic[T]):
             await listener(value)
 
 
-def call(command: str, dir: Path | str | None = None) -> tuple[str, str, int]:
+def call(command: str, dir: os.PathLike | str | None = None) -> tuple[str, str, int]:
     try:
         result = subprocess.run(
             command,

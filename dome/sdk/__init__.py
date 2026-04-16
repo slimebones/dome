@@ -1,3 +1,5 @@
+# PathLike | str combination is used due to problems with Pylance
+
 import argparse
 from contextvars import ContextVar
 import json
@@ -7,6 +9,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import tarfile
 import time
 from typing import TYPE_CHECKING, Callable
 
@@ -19,7 +22,6 @@ from dome.project import Project
 
 
 _projectfile_context = ContextVar("project_function_context")
-call = core.call
 
 
 # called internally
@@ -190,13 +192,13 @@ class Host:
         self._executor_secret: str | None = None
         self._user: str | None = None
 
-    def setExecutorSecret(self, secret: str):
+    def set_executor_secret(self, secret: str):
         self._executor_secret = secret
 
-    def setUser(self, user: str):
+    def set_user(self, user: str):
         self._user = user
 
-    def scp(self, from_path: PathLike, to_path: PathLike, *, port: int = 22):
+    def scp(self, from_path: PathLike | str, to_path: PathLike | str, *, port: int = 22):
         if not self._user:
             raise Exception(f"please set user first using a function `host.setUser()`")
 
@@ -214,7 +216,7 @@ class Host:
     def request(self, url: str, **kwargs) -> httpx.Response:
         return httpx.post(url, **kwargs)
 
-    def mustExecute(self, command: str, **kwargs) -> tuple[str, str]:
+    def must_execute(self, command: str, **kwargs) -> tuple[str, str]:
         retcode, stdout, stderr = self.execute(command, **kwargs)
         if retcode != 0:
             raise Exception(f"retcode {retcode} while executing command '{command}', with stderr {stderr}")
@@ -256,3 +258,50 @@ class Host:
         stdout = data["stdout"]
         stderr = data["stderr"]
         return retcode, stdout, stderr
+
+
+def tar(source_dir: PathLike | str, output_filename: PathLike | str):
+    """Create a .tar.gz archive from the specified directory."""
+    p = project()
+    with tarfile.open(Path(p.source_dir, output_filename), "w:gz") as tar:
+        tar.add(Path(p.source_dir, Path(p.source_dir, source_dir)), arcname=os.path.basename(source_dir))
+
+
+def untar(tar_gz_path: PathLike | str, extract_path: PathLike | str):
+    """Extract a .tar.gz archive to the specified directory."""
+    p = project()
+    with tarfile.open(Path(p.source_dir, tar_gz_path), "r:gz") as tar:
+        tar.extractall(path=Path(p.source_dir, extract_path))
+
+
+def trash(*paths: PathLike | str):
+    """Universal trash command."""
+    p = project()
+    new_paths = []
+    for path in paths:
+        new_paths.append(Path(p.source_dir, path))
+    call(f"~/.app/trash/trash.py trash {' '.join([str(x) for x in new_paths])}", p.source_dir)
+
+
+def rm(*paths: PathLike | str):
+    p = project()
+    new_paths = []
+    for path in paths:
+        new_paths.append(Path(p.source_dir, path))
+    call(f"rm -rf {' '.join([str(x) for x in new_paths])}", p.source_dir)
+
+
+def call(command: str, dir: PathLike | str | None = None) -> tuple[str, str, int]:
+    p = project()
+    if dir is None:
+        d = p.source_dir
+    else:
+        d = Path(p.source_dir, dir)
+    return core.call(command, d)
+
+
+def must_call(command: str, dir: PathLike | str | None = None):
+    p = project()
+    _, stderr, retcode = call(command, dir)
+    if retcode != 0:
+        raise Exception(f"During call of command '{command}', an error occurred: {stderr}")
