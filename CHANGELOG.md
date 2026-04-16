@@ -1,5 +1,9 @@
 --------------------------------------------------------------------------------
 
+* polish execute capabilities, add -a flag
+* extend sdk with missing functions, also add init_build to correctly initialize build directories
+* sdk: provide project() instead of context()
+* a lot of internal refactors
 
 --------------------------------------------------------------------------------
 1.1.0, 15 April 2026

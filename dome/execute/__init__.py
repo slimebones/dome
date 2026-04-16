@@ -42,5 +42,5 @@ async def _execute_project(path: Path, args: RunArgs):
     try:
         await target_function(*function_args, **function_kwargs)
     except Exception as e:
-        core.error(f"during execution of function '{function_name}', an error occurred: {e}")
+        core.error(f"during execution of function '{function_name}', an error occurred: {e}", e)
         return

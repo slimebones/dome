@@ -31,6 +31,12 @@ def project() -> Project:
     return _projectfile_context.get()
 
 
+def init_build():
+    p = project()
+    shutil.rmtree(p.build_dir, ignore_errors=True)
+    p.build_dir.mkdir(parents=True, exist_ok=True)
+
+
 def generate_build_info():
     p = project()
     build_time = time.time()

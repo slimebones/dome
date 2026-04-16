@@ -3,6 +3,7 @@ from dome import sdk
 project_id = "project-1.py"
 
 async def build():
+    sdk.init_build()
     sdk.generate_build_info()
     sdk.generate_codes()
     sdk.include_python()
