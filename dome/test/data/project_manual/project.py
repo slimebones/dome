@@ -1,11 +1,11 @@
 from dome import sdk
 
-project_id = "project-1.py"
+project_id = "project-1"
 
 async def build():
     sdk.init_build()
-    sdk.generate_build_info()
-    sdk.generate_codes()
+    sdk.generate_build_info("build.py")
+    sdk.generate_codes("codes.py")
     sdk.include_python()
 
 

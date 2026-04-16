@@ -10,8 +10,7 @@ from dome.runargs import RunArgs
 
 class Project(Model):
     id: str
-    shortid: str
-    tech: str
+    domain: str | None
     name: str | None
     description: str | None
 
@@ -31,12 +30,7 @@ class Project(Model):
 
 
 def _is_valid_id(id_string: str) -> bool:
-    # ^[a-z-]       -> Part 1: starts with lowercase letter or hyphen
-    # [a-z0-9-]*    -> Part 1: remaining lowercase alnum or hyphen
-    # \.            -> Literal dot
-    # [a-z-]        -> Part 2: starts with lowercase letter or hyphen
-    # [a-z0-9-]*$   -> Part 2: remaining lowercase alnum or hyphen
-    pattern = r"^[a-z-][a-z0-9-]*\.[a-z-][a-z0-9-]*$"
+    pattern = r"^[a-z-][a-z0-9-]*$"
 
     return bool(re.match(pattern, id_string))
 
@@ -61,11 +55,11 @@ def parse(path: Path, args: RunArgs) -> tuple[Project, ModuleType] | None:
     project_id = project_id.strip().lower()
     if not _is_valid_id(project_id):
         core.error(f"incorrect id '{project_id}', must follow the form 'domain.id'")
-    try:
-        shortid, tech = project_id.split(".")
-    except ValueError:
-        assert False, "must be regex-protected"
 
+    domain = getattr(module, "project_domain", None)
+    if domain is not None and not isinstance(domain, str):
+        core.error(f"project.py:domain must be a string")
+        return
     name = getattr(module, "project_name", None)
     if name is not None and not isinstance(name, str):
         core.error(f"project.py:name must be a string")
@@ -81,8 +75,7 @@ def parse(path: Path, args: RunArgs) -> tuple[Project, ModuleType] | None:
 
     return Project(
         id=project_id,
-        shortid=shortid,
-        tech=tech,
+        domain=domain,
         name=name,
         description=description,
         args=vars(args.args),
