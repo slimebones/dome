@@ -34,6 +34,10 @@ async def _main():
 
     module_subparser = main_parser.add_subparsers(title="Modules", help="Modules.", dest="module")
 
+    # open 
+    parser = module_subparser.add_parser("open", help="Opens project for editing.")
+    parser.add_argument("path", type=Path)
+ 
 
     # execute
     parser = module_subparser.add_parser("execute", help="Executes a function from the cwd's projectfile.")
@@ -116,6 +120,9 @@ async def _main():
         sys.exit(1)
 
     match args.module:
+        case "open":
+            p = Path(args.path, "project.code-workspace")
+            core.call(f"code.cmd {p}")
         case "execute":
             await execute.run(rargs)
         case "vc":
@@ -127,8 +134,6 @@ async def _main():
         case _:
             core.error(f"unrecognized module '{args.module}'")
             sys.exit(1)
-
-    _response()
 
 
 def main():
