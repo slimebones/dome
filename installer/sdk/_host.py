@@ -27,6 +27,10 @@ def _quote(path: Path | str) -> str:
     return shlex.quote(str(path).replace("\\", "/"))
 
 
+def _looks_like_glob(pattern: str) -> bool:
+    return any(ch in pattern for ch in "*?[")
+
+
 class Host:
     """
     Run commands and file operations on this machine (local) or a remote host (SSH).
@@ -391,16 +395,28 @@ class Host:
             cmd = f"mv {_quote(src_resolved.as_posix())} {_quote(dest_resolved.as_posix())}"
         self.execute(cmd)
 
+    def _expand_recycle_paths(self, path: PathLike | str) -> list[Path]:
+        from installer.sdk import project
+
+        p = Path(path)
+        pattern = p.as_posix()
+        if _looks_like_glob(pattern):
+            return sorted(project().source_dir.glob(pattern))
+        return [self._resolve_path(path)]
+
     def recycle(self, *paths: PathLike | str) -> None:
         if not paths:
             return
         for path in paths:
-            target = self._resolve_path(path).resolve()
-            self._log(f"recycle '{target}'")
-            if self._is_local:
-                send_to_recycle(target)
-            else:
-                self._remote_recycle(target)
+            for target in self._expand_recycle_paths(path):
+                if not target.exists():
+                    continue
+                resolved = target.resolve()
+                self._log(f"recycle '{resolved}'")
+                if self._is_local:
+                    send_to_recycle(resolved)
+                else:
+                    self._remote_recycle(resolved)
 
     def _remote_recycle(self, path: Path) -> None:
         platform = self._platform()

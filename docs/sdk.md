@@ -103,7 +103,7 @@ Paths are resolved like `execute` (relative → project `source_dir` on the mach
 | `mkdir(path, *, parents=True, exist_ok=False)` | Create directory |
 | `copy(src, dest, *, recursive=False)` | Copy or upload (`copy` from project tree → remote uses SFTP) |
 | `move(src, dest)` | Move/rename |
-| `recycle(*paths)` | Move to OS trash / recycle bin |
+| `recycle(*paths)` | Move to OS trash / recycle bin; globs (`*`, `?`, `[`) under `source_dir`; missing paths are skipped |
 | `remove(*paths)` | Permanent delete |
 | `tar(source, archive, *, gzip=True)` | Create `.tar` / `.tar.gz` |
 | `zip(source, archive)` | Create `.zip` |

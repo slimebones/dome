@@ -55,3 +55,60 @@ async def main(*args, **kwargs) -> None:
     result = run_installer(["run"], cwd=tmp_path)
     assert result.returncode == 0, result.stderr
     assert not (tmp_path / "remove.txt").exists()
+
+
+def test_recycle_missing_path_ok(tmp_path: Path) -> None:
+    (tmp_path / "project.cfg").write_text(_project_cfg(), encoding="utf-8")
+    (tmp_path / "install.py").write_text(
+        """
+import installer.sdk as sdk
+
+async def main(*args, **kwargs) -> None:
+    sdk.Host.current().recycle("does-not-exist.txt")
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = run_installer(["run"], cwd=tmp_path)
+    assert result.returncode == 0, result.stderr
+
+
+def test_recycle_glob(tmp_path: Path) -> None:
+    (tmp_path / "project.cfg").write_text(_project_cfg(), encoding="utf-8")
+    (tmp_path / "a.tmp").write_text("a", encoding="utf-8")
+    (tmp_path / "b.tmp").write_text("b", encoding="utf-8")
+    (tmp_path / "keep.txt").write_text("k", encoding="utf-8")
+    (tmp_path / "install.py").write_text(
+        """
+import installer.sdk as sdk
+
+async def main(*args, **kwargs) -> None:
+    sdk.Host.current().recycle("*.tmp")
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = run_installer(["run"], cwd=tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert not (tmp_path / "a.tmp").exists()
+    assert not (tmp_path / "b.tmp").exists()
+    assert (tmp_path / "keep.txt").exists()
+
+
+def test_recycle_glob_no_matches_ok(tmp_path: Path) -> None:
+    (tmp_path / "project.cfg").write_text(_project_cfg(), encoding="utf-8")
+    (tmp_path / "install.py").write_text(
+        """
+import installer.sdk as sdk
+
+async def main(*args, **kwargs) -> None:
+    sdk.Host.current().recycle("*.nomatch")
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = run_installer(["run"], cwd=tmp_path)
+    assert result.returncode == 0, result.stderr
