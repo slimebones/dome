@@ -57,7 +57,7 @@ version = 1.0.0
 
 - `id` must contain exactly two kebab-case lowercase parts: `company.project`.
 - `name` is the directory that contains `project.cfg`; `installer.sdk.project().name` exposes it to `install.py` scripts.
-- `version` is the deployed project’s version string (read into `installer.sdk.project().version`); it is not the `installer` CLI tool version.
+- `version` is optional; if omitted, defaults to `0.1.0`. It is the deployed project’s version string (`installer.sdk.project().version`), not the `installer` CLI tool version.
 
 ### `install.py`
 

@@ -122,9 +122,7 @@ def _load_project_config(target_dir: Path) -> DeployTargetConfig:
     name = target_dir.name
     if not name:
         raise ValueError("project directory name must be non-empty")
-    version = _cfg_scalar(sec, "version")
-    if not version:
-        raise ValueError("project.cfg must define non-empty [project].version")
+    version = _cfg_scalar(sec, "version") or "0.1.0"
     return DeployTargetConfig(id=project_id, name=name, version=version)
 
 

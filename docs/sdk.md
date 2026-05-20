@@ -28,7 +28,7 @@ Returns the active `Project` model for the target being deployed.
 
 Common fields:
 
-- `id`, `version`, `name`, `debug`, `mode`
+- `id`, `version` (from `project.cfg`, default `0.1.0`), `name`, `debug`, `mode`
 - `source_dir` — project root (where `project.cfg` and sources live)
 - `build_dir` — output directory for this run (under the project tree)
 

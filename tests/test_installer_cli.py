@@ -60,19 +60,24 @@ def test_requires_valid_project_id(tmp_path: Path) -> None:
     assert "kebab-case lowercase" in result.stderr
 
 
-def test_requires_project_version(tmp_path: Path) -> None:
+def test_defaults_project_version_when_omitted(tmp_path: Path) -> None:
     (tmp_path / "project.cfg").write_text(
         "[project]\nid = company-name.project-name\n",
         encoding="utf-8",
     )
     (tmp_path / "install.py").write_text(
-        "async def main(*args, **kwargs):\n    return None\n",
+        """
+import installer.sdk as sdk
+
+async def main(*args, **kwargs) -> None:
+    assert sdk.project().version == "0.1.0"
+""".strip()
+        + "\n",
         encoding="utf-8",
     )
 
     result = run_installer(["run"], cwd=tmp_path)
-    assert result.returncode == 1
-    assert "[project].version" in result.stderr
+    assert result.returncode == 0, result.stderr
 
 
 def test_requires_async_main_signature(tmp_path: Path) -> None:

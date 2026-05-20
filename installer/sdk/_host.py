@@ -258,7 +258,7 @@ class Host:
         path: PathLike | str,
         *,
         parents: bool = True,
-        exist_ok: bool = False,
+        exist_ok: bool = True,
     ) -> None:
         resolved = self._resolve_path(path)
         self._log(f"mkdir '{resolved}'")
